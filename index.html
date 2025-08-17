@@ -111,7 +111,7 @@
         <button class="btn" id="submitScoreBtn" style="margin-bottom:10px;background:linear-gradient(135deg,#ffffff,#f0f0f0) !important;color:#e51c23 !important;border:2px solid #e51c23 !important;box-shadow:0 6px 18px rgba(229,28,35,0.35) !important;">Submit to Leaderboard</button>
         <button class="btn" id="viewLeaderboardBtn" style="background:linear-gradient(135deg,#4CAF50,#45a049)">View Leaderboard</button>
       </div>
-      <button class="btn" id="againBtn">Play Again</button>
+      <button class="btn" id="againBtn" style="background:linear-gradient(135deg,#ffffff,#f0f0f0) !important;color:#e51c23 !important;border:2px solid #e51c23 !important;box-shadow:0 6px 18px rgba(229,28,35,0.35) !important;">Play Again</button>
     </div>
   </div>
 
@@ -675,8 +675,8 @@ function setupSizes(){
   const isMobile = vw < 768;
   G.scale = Math.min(vw/CFG.refW, vh/CFG.refH);
   
-  // Responsive cone size - 40% bigger on mobile, 20% smaller on desktop
-  const coneW = isMobile ? clamp(vw*0.49, 168, 392) : clamp(vw*0.208, 144, 288);
+  // Responsive cone size - 40% bigger on mobile, 30% smaller on desktop
+  const coneW = isMobile ? clamp(vw*0.49, 168, 392) : clamp(vw*0.182, 126, 252);
   Cone.w = coneW; 
   Cone.h = coneW; 
   Cone.y = vh - Cone.h - clamp(vh*0.02, isMobile ? 16 : 24, isMobile ? 40 : 60); 
