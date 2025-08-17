@@ -19,6 +19,7 @@ A fun browser-based game where you catch falling items while avoiding police sir
 - **Touch & Keyboard Controls** - Multiple input methods
 - **Volume Controls** - Separate sliders for music and SFX
 - **Pause Function** - Press P or click pause button
+- **🏆 Leaderboard System** - Submit high scores with Supabase backend
 
 ## 🚀 Play Now
 
@@ -31,12 +32,13 @@ A fun browser-based game where you catch falling items while avoiding police sir
 - **Web Audio API** - Sound effects and music
 - **CSS3** - Styling with custom properties
 - **PNG Assets** - All game sprites and backgrounds
+- **Supabase** - Leaderboard database backend
 
 ## 📁 Project Structure
 
 ```
 IceCreamHustle/
-├── ice_cream_hustle_working.html  # Main game file
+├── index.html                     # Main game file
 ├── PERCO.mp3                      # Background music
 ├── background.png                 # Crimson aura background
 ├── cone.png                       # Ice cream cone sprite
@@ -72,6 +74,13 @@ IceCreamHustle/
 - **buzzer**: Warning sounds
 - **siren**: Police siren tones
 
+## 🏆 Leaderboard System
+
+- **Automatic Score Submission** - High scores are saved to Supabase database
+- **Real-time Leaderboard** - View top scores from all players
+- **Cross-browser Support** - Works on any device/browser
+- **Handle-based Scoring** - Submit with your TikTok/Instagram handle
+
 ## 🌐 Browser Compatibility
 
 - Chrome 60+
@@ -103,7 +112,7 @@ python3 -m http.server 8000
 npx http-server -p 8000
 ```
 
-3. Open `http://localhost:8000/ice_cream_hustle_working.html`
+3. Open `http://localhost:8000/index.html`
 
 ## 📄 License
 
