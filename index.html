@@ -668,8 +668,8 @@ function setupSizes(){
   const isMobile = vw < 768;
   G.scale = Math.min(vw/CFG.refW, vh/CFG.refH);
   
-  // Responsive cone size - 40% bigger on mobile, 30% smaller on desktop
-  const coneW = isMobile ? clamp(vw*0.49, 168, 392) : clamp(vw*0.182, 126, 252);
+  // Responsive cone size - 25% bigger on mobile (was 40%), 30% smaller on desktop
+  const coneW = isMobile ? clamp(vw*0.42, 144, 336) : clamp(vw*0.182, 126, 252);
   Cone.w = coneW; 
   Cone.h = coneW; 
   Cone.y = vh - Cone.h - clamp(vh*0.02, isMobile ? 16 : 24, isMobile ? 40 : 60); 
@@ -692,7 +692,11 @@ function spawnItem(){
   
   const x=Math.random()*(vw-responsiveW); 
   const y=-responsiveH-4; 
-  const vy=(cfg.sMin*G.speedMul)+Math.random()*((cfg.sMax*G.speedMul)-(cfg.sMin*G.speedMul));
+  
+  // Make items drop 25% slower on mobile
+  const isMobile = window.innerWidth < 768;
+  const speedMultiplier = isMobile ? 0.75 : 1.0; // 25% slower on mobile
+  const vy=((cfg.sMin*G.speedMul)+Math.random()*((cfg.sMax*G.speedMul)-(cfg.sMin*G.speedMul))) * speedMultiplier;
   
   G.items.push({type:pick,x,y,w:responsiveW,h:responsiveH,vy}); 
   if(G.items.length>CFG.itemCap) G.items.shift();
