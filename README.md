@@ -2,6 +2,9 @@
 
 A fun browser-based game where you catch falling items while avoiding police sirens! Built with HTML5 Canvas, JavaScript, and Web Audio API.
 
+**Developed by Georgia Alexia Tsiranidi for Next Gen Creative Systems**  
+**Client: Ivan Greko**
+
 ## 🎮 How to Play
 
 - **Controls**: Use mouse/touch or arrow keys (A/D) to move the ice cream cone
@@ -124,7 +127,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📞 Contact
 
-- **Developer**: Ivan Greko
+- **Developer**: Georgia Alexia Tsiranidi
+- **Company**: Next Gen Creative Systems
+- **Client**: Ivan Greko
 - **Repository**: [https://github.com/wearenextgen/IceCreamHustle](https://github.com/wearenextgen/IceCreamHustle)
 
 ---
