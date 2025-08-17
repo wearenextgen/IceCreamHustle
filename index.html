@@ -60,10 +60,11 @@
     .round-btn { width: 44px !important; height: 44px !important; }
     .audio-box { padding: 6px 8px !important; font-size: 11px !important; }
     #coneArt { width: min(280px, 70vw) !important; height: min(280px, 70vw) !important; }
+    .panel { max-width: 95vw !important; }
   }
   
   @media (max-width: 480px) {
-    .panel { padding: clamp(12px, 3vmin, 20px) !important; }
+    .panel { padding: clamp(12px, 3vmin, 20px) !important; max-width: 98vw !important; }
     .title { font-size: clamp(20px, 4.5vmin, 32px) !important; }
     .subtitle { font-size: clamp(11px, 2.5vmin, 14px) !important; }
     .btn { font-size: clamp(13px, 3vmin, 16px) !important; padding: 8px 16px !important; }
@@ -72,6 +73,14 @@
     .round-btn { width: 40px !important; height: 40px !important; }
     .audio-box { padding: 5px 6px !important; font-size: 10px !important; }
     #coneArt { width: min(240px, 75vw) !important; height: min(240px, 75vw) !important; }
+    #startLeaderboardBtn { margin-left: 0 !important; margin-top: 10px !important; display: block !important; }
+  }
+  
+  /* Mobile-specific fixes */
+  @media (max-width: 480px) {
+    #playerHandle { font-size: 16px !important; } /* Prevents zoom on iOS */
+    .btn { min-height: 44px !important; } /* Better touch targets */
+    .round-btn { min-height: 44px !important; min-width: 44px !important; }
   }
 </style>
 </head>
@@ -103,7 +112,7 @@
           <label style="display:block;margin-bottom:5px;font-size:14px">Your TikTok/Instagram Handle:</label>
           <input type="text" id="playerHandle" placeholder="@username" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.3);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
         </div>
-        <button class="btn" id="submitScoreBtn" style="margin-bottom:10px">Submit to Leaderboard</button>
+        <button class="btn" id="submitScoreBtn" style="margin-bottom:10px;background:linear-gradient(135deg,#ffffff,#f0f0f0);color:#333;border:1px solid #ddd">Submit to Leaderboard</button>
         <button class="btn" id="viewLeaderboardBtn" style="background:linear-gradient(135deg,#4CAF50,#45a049)">View Leaderboard</button>
       </div>
       <button class="btn" id="againBtn">Play Again</button>
@@ -147,8 +156,16 @@ const SIREN_IMAGE_DATA   = "siren.png";
 function loadImageDataUrl(dataUrl){
   return new Promise(res=>{
     if(!dataUrl||typeof dataUrl!=="string") return res(null);
-    const img=new Image(); img.decoding='async';
-    img.onload=()=>res(img); img.onerror=()=>res(null); img.src=dataUrl; if(img.decode) img.decode().then(()=>res(img)).catch(()=>{});
+    const img=new Image(); 
+    img.decoding='async';
+    img.crossOrigin = 'anonymous'; // Fix for mobile CORS issues
+    img.onload=()=>res(img); 
+    img.onerror=()=>{
+      console.warn('Failed to load image:', dataUrl);
+      res(null);
+    }; 
+    img.src=dataUrl; 
+    if(img.decode) img.decode().then(()=>res(img)).catch(()=>{});
   });
 }
 
@@ -403,7 +420,11 @@ function weightedPick(pairs){let tot=0;for(const p of pairs)tot+=p[1];let r=Math
 // Input
 let keys=new Set();
 function setConeAt(x){Cone.targetX = clamp(x, 0, vw-Cone.w);} 
-function onPointer(e){ const x=(e.touches?e.touches[0].clientX:e.clientX)||0; setConeAt(x - Cone.w/2);} 
+function onPointer(e){ 
+  e.preventDefault(); // Prevent default touch behavior
+  const x=(e.touches?e.touches[0].clientX:e.clientX)||0; 
+  setConeAt(x - Cone.w/2);
+} 
 function onMouseMove(e){ setConeAt(e.clientX - Cone.w/2);} 
 function onKey(e,down){
   // Don't handle keyboard events if user is typing in an input field
