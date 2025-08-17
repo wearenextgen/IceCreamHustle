@@ -408,15 +408,8 @@ function weightedPick(pairs){let tot=0;for(const p of pairs)tot+=p[1];let r=Math
 // Input
 let keys=new Set();
 function setConeAt(x){Cone.targetX = clamp(x, 0, vw-Cone.w);} 
-function onPointer(e){ 
-  e.preventDefault(); // Prevent default touch behavior
-  const x=(e.touches?e.touches[0].clientX:e.clientX)||0; 
-  setConeAt(x - Cone.w/2); 
-} 
-function onMouseMove(e){ 
-  if (e.touches) return; // Only handle mouse, not touch
-  setConeAt(e.clientX - Cone.w/2);
-} 
+function onPointer(e){ const x=(e.touches?e.touches[0].clientX:e.clientX)||0; setConeAt(x - Cone.w/2);} 
+function onMouseMove(e){ setConeAt(e.clientX - Cone.w/2);} 
 function onKey(e,down){
   // Don't handle keyboard events if user is typing in an input field
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
@@ -966,10 +959,6 @@ playerHandleInput.addEventListener('keydown', (e) => {
 window.addEventListener('pointerdown', onPointer, {passive:false});
 window.addEventListener('pointermove', onPointer, {passive:false});
 window.addEventListener('mousemove', onMouseMove, {passive:false});
-
-// Mobile-specific touch handling
-window.addEventListener('touchstart', onPointer, {passive:false});
-window.addEventListener('touchmove', onPointer, {passive:false});
 window.addEventListener('keydown', e=>onKey(e,true));
 window.addEventListener('keyup', e=>onKey(e,false));
 
