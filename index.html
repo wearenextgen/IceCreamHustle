@@ -931,18 +931,30 @@ function hideLeaderboard() {
 
 // Wire UI
 playBtn.addEventListener('click', startGame);
+playBtn.addEventListener('touchstart', startGame, {passive:false});
 againBtn.addEventListener('click', restart);
+againBtn.addEventListener('touchstart', restart, {passive:false});
 pauseBtn.addEventListener('click', togglePause);
+pauseBtn.addEventListener('touchstart', togglePause, {passive:false});
 submitScoreBtn.addEventListener('click', submitScore);
+submitScoreBtn.addEventListener('touchstart', submitScore, {passive:false});
 viewLeaderboardBtn.addEventListener('click', showLeaderboard);
+viewLeaderboardBtn.addEventListener('touchstart', showLeaderboard, {passive:false});
 closeLeaderboardBtn.addEventListener('click', hideLeaderboard);
+closeLeaderboardBtn.addEventListener('touchstart', hideLeaderboard, {passive:false});
 startLeaderboardBtn.addEventListener('click', showLeaderboard);
+startLeaderboardBtn.addEventListener('touchstart', showLeaderboard, {passive:false});
 
 // Ensure input field is clickable and focusable
 playerHandleInput.addEventListener('click', (e) => {
   e.stopPropagation();
   playerHandleInput.focus();
 });
+
+playerHandleInput.addEventListener('touchstart', (e) => {
+  e.stopPropagation();
+  playerHandleInput.focus();
+}, {passive:false});
 
 playerHandleInput.addEventListener('input', (e) => {
   e.stopPropagation();
