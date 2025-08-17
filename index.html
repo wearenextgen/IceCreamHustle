@@ -35,6 +35,21 @@
   .audio-box input{accent-color:#e51c23; width:80px;}
   .credit{margin-top:10px;font-size:12px;opacity:.75}
   
+  /* Leaderboard input styling */
+  #playerHandle {
+    pointer-events: auto !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    cursor: text !important;
+  }
+  
+  #playerHandle:focus {
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.5) !important;
+  }
+  
   /* Mobile responsiveness */
   @media (max-width: 768px) {
     .title { font-size: clamp(24px, 5vmin, 36px) !important; }
@@ -73,6 +88,7 @@
         <div id="coneArt" style="width:min(320px,65vw);height:min(320px,65vw);margin:0 auto;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.35);background:center/contain no-repeat"></div>
       </div>
       <button class="btn" id="playBtn" type="button">PLAY</button>
+      <button class="btn" id="startLeaderboardBtn" style="background:linear-gradient(135deg,#4CAF50,#45a049);margin-left:10px">🏆 Leaderboard</button>
       <div class="credit">Tip: drag with finger/mouse, or use ←/→ / A/D. Press P to pause.</div>
     </div>
   </div>
@@ -81,7 +97,27 @@
     <div class="panel">
       <div class="title">Game Over</div>
       <div id="summary" class="subtitle" style="line-height:1.6"></div>
+      <div id="leaderboardSection" style="margin:20px 0;display:none">
+        <div style="font-size:16px;margin-bottom:10px;color:#ffd700">🏆 New High Score! 🏆</div>
+        <div style="margin-bottom:15px">
+          <label style="display:block;margin-bottom:5px;font-size:14px">Your TikTok/Instagram Handle:</label>
+          <input type="text" id="playerHandle" placeholder="@username" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.3);color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+        </div>
+        <button class="btn" id="submitScoreBtn" style="margin-bottom:10px">Submit to Leaderboard</button>
+        <button class="btn" id="viewLeaderboardBtn" style="background:linear-gradient(135deg,#4CAF50,#45a049)">View Leaderboard</button>
+      </div>
       <button class="btn" id="againBtn">Play Again</button>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="overlay" id="leaderboardOverlay" style="display:none">
+    <div class="panel" style="max-width:600px">
+      <div class="title">🏆 Leaderboard 🏆</div>
+      <div id="leaderboardContent" class="subtitle" style="text-align:left;line-height:1.8">
+        <div style="text-align:center;color:#ffd700">Loading leaderboard...</div>
+      </div>
+      <button class="btn" id="closeLeaderboardBtn">Close</button>
     </div>
   </div>
 
@@ -301,9 +337,17 @@ const State={ START:'start', PLAY:'play', PAUSE:'pause', OVER:'over' };
 let state=State.START;
 const startOverlay=document.getElementById('startOverlay');
 const gameOverOverlay=document.getElementById('gameOverOverlay');
+const leaderboardOverlay=document.getElementById('leaderboardOverlay');
 const playBtn=document.getElementById('playBtn');
 const againBtn=document.getElementById('againBtn');
 const pauseBtn=document.getElementById('pauseBtn');
+const submitScoreBtn=document.getElementById('submitScoreBtn');
+const viewLeaderboardBtn=document.getElementById('viewLeaderboardBtn');
+const closeLeaderboardBtn=document.getElementById('closeLeaderboardBtn');
+const startLeaderboardBtn=document.getElementById('startLeaderboardBtn');
+const playerHandleInput=document.getElementById('playerHandle');
+const leaderboardSection=document.getElementById('leaderboardSection');
+const leaderboardContent=document.getElementById('leaderboardContent');
 const hud=document.getElementById('hud');
 const scoreLabel=document.getElementById('scoreLabel');
 const timerLabel=document.getElementById('timerLabel');
@@ -362,6 +406,11 @@ function setConeAt(x){Cone.targetX = clamp(x, 0, vw-Cone.w);}
 function onPointer(e){ const x=(e.touches?e.touches[0].clientX:e.clientX)||0; setConeAt(x - Cone.w/2);} 
 function onMouseMove(e){ setConeAt(e.clientX - Cone.w/2);} 
 function onKey(e,down){
+  // Don't handle keyboard events if user is typing in an input field
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    return;
+  }
+  
   const k=e.key.toLowerCase();
   if(k==='arrowleft'||k==='a') (down?keys.add('left'):keys.delete('left'));
   if(k==='arrowright'||k==='d') (down?keys.add('right'):keys.delete('right'));
@@ -750,15 +799,158 @@ function endGame(){
   const volume = getVolumeLevel() * 0.3;
   setVolume(volume);
   
-  const final = '<div><strong>Final Score:</strong> '+Math.max(0,Math.round(G.score))+'</div>';
+  const finalScore = Math.max(0, Math.round(G.score));
+  const final = '<div><strong>Final Score:</strong> '+finalScore+'</div>';
   document.getElementById('summary').innerHTML = final;
+  
+  // Check if it's a high score
+  if (checkHighScore(finalScore)) {
+    showLeaderboardSection();
+  } else {
+    hideLeaderboardSection();
+  }
 }
 function restart(){ startGame(); }
+
+// Leaderboard functions
+function checkHighScore(score) {
+  const highScores = JSON.parse(localStorage.getItem('iceCreamHustleScores') || '[]');
+  return highScores.length < 10 || score > Math.min(...highScores.map(s => s.score));
+}
+
+function showLeaderboardSection() {
+  leaderboardSection.style.display = 'block';
+}
+
+function hideLeaderboardSection() {
+  leaderboardSection.style.display = 'none';
+}
+
+function submitScore() {
+  const handle = playerHandleInput.value.trim();
+  const score = Math.max(0, Math.round(G.score));
+  
+  if (!handle) {
+    alert('Please enter your TikTok/Instagram handle!');
+    return;
+  }
+  
+  // Show loading state
+  submitScoreBtn.textContent = 'Submitting...';
+  submitScoreBtn.disabled = true;
+  
+  // Submit to Supabase backend (automatic submission)
+  fetch('https://thkzafepzwnrpfkjjcau.supabase.co/rest/v1/scores', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoa3phZmVwenducnBma2pqY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NDQwMDgsImV4cCI6MjA3MTAyMDAwOH0.ojtqktZVHLfH77qZN4ILdkCJ9tVIIgFi3lSbSRZcbmk',
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoa3phZmVwenducnBma2pqY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NDQwMDgsImV4cCI6MjA3MTAyMDAwOH0.ojtqktZVHLfH77qZN4ILdkCJ9tVIIgFi3lSbSRZcbmk'
+    },
+    body: JSON.stringify({
+      handle: handle,
+      score: score,
+      date: new Date().toISOString()
+    })
+  })
+  .then(response => {
+    if (response.ok) {
+      alert('Score submitted successfully! 🏆');
+      hideLeaderboardSection();
+      loadLeaderboard(); // Refresh leaderboard
+    } else {
+      throw new Error('Submission failed');
+    }
+  })
+  .catch(error => {
+    console.error('Error submitting score:', error);
+    alert('Failed to submit score. Please try again later.');
+  })
+  .finally(() => {
+    submitScoreBtn.textContent = 'Submit to Leaderboard';
+    submitScoreBtn.disabled = false;
+  });
+}
+
+function loadLeaderboard() {
+  leaderboardContent.innerHTML = '<div style="text-align:center;color:#ffd700">Loading leaderboard...</div>';
+  
+  // Try to fetch from Supabase backend first
+  fetch('https://thkzafepzwnrpfkjjcau.supabase.co/rest/v1/scores?select=*&order=score.desc&limit=10', {
+    headers: {
+      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoa3phZmVwenducnBma2pqY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NDQwMDgsImV4cCI6MjA3MTAyMDAwOH0.ojtqktZVHLfH77qZN4ILdkCJ9tVIIgFi3lSbSRZcbmk',
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoa3phZmVwenducnBma2pqY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NDQwMDgsImV4cCI6MjA3MTAyMDAwOH0.ojtqktZVHLfH77qZN4ILdkCJ9tVIIgFi3lSbSRZcbmk'
+    }
+  })
+    .then(response => {
+      console.log('Leaderboard response status:', response.status);
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error('Backend unavailable - Status: ' + response.status);
+      }
+    })
+    .then(scores => {
+      // Display scores from backend
+      if (scores.length === 0) {
+        leaderboardContent.innerHTML = '<div style="text-align:center;color:#ffd700">No scores yet! Be the first! 🏆</div>';
+      } else {
+        let html = '';
+        scores.forEach((score, index) => {
+          const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+          const date = new Date(score.date).toLocaleDateString();
+          html += `<div style="margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.1);border-radius:8px;">
+            <span style="color:#ffd700;font-weight:bold">${medal}</span> 
+            <span style="color:#fff;font-weight:bold">${score.score}</span> 
+            <span style="color:#ccc">by ${score.handle}</span>
+            <span style="color:#888;font-size:12px;float:right">${date}</span>
+          </div>`;
+        });
+        leaderboardContent.innerHTML = html;
+      }
+    })
+    .catch(error => {
+      console.error('Backend error:', error);
+      leaderboardContent.innerHTML = '<div style="text-align:center;color:#ff6b6b">Error loading leaderboard: ' + error.message + '</div>';
+    });
+}
+
+function showLeaderboard() {
+  leaderboardOverlay.style.display = 'grid';
+  loadLeaderboard();
+}
+
+function hideLeaderboard() {
+  leaderboardOverlay.style.display = 'none';
+}
 
 // Wire UI
 playBtn.addEventListener('click', startGame);
 againBtn.addEventListener('click', restart);
 pauseBtn.addEventListener('click', togglePause);
+submitScoreBtn.addEventListener('click', submitScore);
+viewLeaderboardBtn.addEventListener('click', showLeaderboard);
+closeLeaderboardBtn.addEventListener('click', hideLeaderboard);
+startLeaderboardBtn.addEventListener('click', showLeaderboard);
+
+// Ensure input field is clickable and focusable
+playerHandleInput.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playerHandleInput.focus();
+});
+
+playerHandleInput.addEventListener('input', (e) => {
+  e.stopPropagation();
+});
+
+playerHandleInput.addEventListener('focus', (e) => {
+  e.stopPropagation();
+});
+
+playerHandleInput.addEventListener('keydown', (e) => {
+  e.stopPropagation();
+});
+
 window.addEventListener('pointerdown', onPointer, {passive:false});
 window.addEventListener('pointermove', onPointer, {passive:false});
 window.addEventListener('mousemove', onMouseMove, {passive:false});
