@@ -192,8 +192,130 @@ const CFG = {
   diffStep:15, diffSpawnDelta:50, diffSpeedMul:1.10,
   itemCap:40,
   points:{ X:2, Hundo:5, Rolex:10 },
-  missPenalty: -5,
+  missPenalty: -3, // Changed to -3 as requested
   strikesMax:3,
+};
+
+// Anti-cheat system
+const ANTI_CHEAT = {
+  maxPossibleScore: 0,
+  gameStartTime: 0,
+  itemCount: 0,
+  lastScoreUpdate: 0,
+  scoreHistory: [],
+  suspiciousActivity: false,
+  lastSubmissionTime: 0,
+  submissionCount: 0,
+  
+  // Initialize anti-cheat
+  init() {
+    this.gameStartTime = performance.now();
+    this.itemCount = 0;
+    this.scoreHistory = [];
+    this.suspiciousActivity = false;
+    this.maxPossibleScore = 0;
+    this.lastSubmissionTime = 0;
+    this.submissionCount = 0;
+  },
+  
+  // Validate score changes
+  validateScore(oldScore, newScore, itemType, action) {
+    const now = performance.now();
+    const timeSinceLastUpdate = now - this.lastScoreUpdate;
+    
+    // Prevent rapid score changes
+    if (timeSinceLastUpdate < 50) { // 50ms minimum between updates
+      console.warn('Suspicious: Score updated too quickly');
+      this.suspiciousActivity = true;
+      return oldScore;
+    }
+    
+    // Calculate expected score change
+    let expectedChange = 0;
+    if (action === 'catch') {
+      expectedChange = CFG.points[itemType] || 0;
+    } else if (action === 'miss') {
+      expectedChange = CFG.missPenalty;
+    }
+    
+    // Validate score change
+    const actualChange = newScore - oldScore;
+    if (Math.abs(actualChange - expectedChange) > 0.1) {
+      console.warn('Suspicious: Invalid score change detected');
+      this.suspiciousActivity = true;
+      return oldScore;
+    }
+    
+    // Update tracking
+    this.lastScoreUpdate = now;
+    this.scoreHistory.push({
+      time: now,
+      oldScore: oldScore,
+      newScore: newScore,
+      itemType: itemType,
+      action: action
+    });
+    
+    // Keep only last 100 entries
+    if (this.scoreHistory.length > 100) {
+      this.scoreHistory.shift();
+    }
+    
+    return newScore;
+  },
+  
+  // Check for impossible scores
+  checkImpossibleScore(score) {
+    const gameTime = (performance.now() - this.gameStartTime) / 1000;
+    const maxItemsPossible = Math.floor(gameTime / 0.5); // Assume max 1 item every 0.5 seconds
+    const maxScorePossible = maxItemsPossible * 10; // Max points per item is 10
+    
+    if (score > maxScorePossible * 1.5) { // Allow 50% buffer for edge cases
+      console.warn('Suspicious: Score exceeds theoretical maximum');
+      this.suspiciousActivity = true;
+      return false;
+    }
+    
+    return true;
+  },
+  
+  // Generate secure score hash
+  generateScoreHash(score, handle) {
+    const salt = 'ice_cream_hustle_2025';
+    const data = `${score}_${handle}_${this.gameStartTime}_${salt}`;
+    let hash = 0;
+    for (let i = 0; i < data.length; i++) {
+      const char = data.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
+  },
+  
+  // Rate limiting for submissions
+  canSubmitScore() {
+    const now = performance.now();
+    const timeSinceLastSubmission = now - this.lastSubmissionTime;
+    
+    // Allow max 3 submissions per minute
+    if (timeSinceLastSubmission < 20000) { // 20 seconds minimum between submissions
+      return false;
+    }
+    
+    // Reset counter if more than 1 minute has passed
+    if (timeSinceLastSubmission > 60000) {
+      this.submissionCount = 0;
+    }
+    
+    // Limit to 3 submissions per minute
+    if (this.submissionCount >= 3) {
+      return false;
+    }
+    
+    this.lastSubmissionTime = now;
+    this.submissionCount++;
+    return true;
+  }
 };
 
 /***** AUDIO SYSTEM *****/
@@ -363,7 +485,7 @@ const audioVolEl=document.getElementById('audioVol');
 const G={
   scale:1,
   timeLeft:60,
-  score:0,
+  _score:0, // Changed to _score to use with getter/setter
   strikes:0,
   items:[],
   nextSpawnAt:0,
@@ -378,6 +500,23 @@ const G={
   spawnBurstMax:3,
   stats:{ caught:{X:0,Hundo:0,Rolex:0,Siren:0}, missed:{X:0,Hundo:0,Rolex:0} }
 };
+
+// Define score property with anti-cheat protection
+Object.defineProperty(G, 'score', {
+  get: function() {
+    return this._score || 0;
+  },
+  set: function(value) {
+    // Only allow score changes through proper game logic
+    if (typeof value !== 'number' || isNaN(value)) {
+      if (typeof ANTI_CHEAT !== 'undefined') {
+        ANTI_CHEAT.suspiciousActivity = true;
+      }
+      return;
+    }
+    this._score = Math.max(0, value);
+  }
+});
 
 const Cone={ x:0,y:0,w:320,h:320,targetX:0 };
 
@@ -678,6 +817,9 @@ function setupSizes(){
 
 function resetVars(){
   G.timeLeft=60; G.score=0; G.strikes=0; G.items.length=0; G.speedMul=1; G.spawnMin=CFG.spawnMin; G.spawnMax=CFG.spawnMax; G.diffTimer=0; G.flash=0; G.paused=false; G.stats={caught:{X:0,Hundo:0,Rolex:0,Siren:0}, missed:{X:0,Hundo:0,Rolex:0}};
+  
+  // Initialize anti-cheat system
+  ANTI_CHEAT.init();
 }
 
 function scheduleNextSpawn(now){ const min=Math.max(180,G.spawnMin - G.speedMul*40), max=Math.max(min+50,G.spawnMax - G.speedMul*40); G.nextSpawnAt = now + (min + Math.random()*(max-min)); }
@@ -727,7 +869,9 @@ let last=0; function loop(ts){
   for(let i=G.items.length-1;i>=0;i--){ const it=G.items[i]; it.y += it.vy*dt;
     if(it.y>vh){ // miss (good items only)
       if(ItemsCfg[it.type].good){
-        G.score = Math.max(0, G.score + CFG.missPenalty);
+        const oldScore = G.score;
+        const newScore = Math.max(0, G.score + CFG.missPenalty);
+        G.score = ANTI_CHEAT.validateScore(oldScore, newScore, it.type, 'miss');
         G.stats.missed[it.type]++;
         // SFX per item on miss
         if(it.type==='X') playSfx('plop');
@@ -744,7 +888,10 @@ let last=0; function loop(ts){
     if(caught){
       const cx = it.x + it.w*0.5, cy = it.y + it.h*0.5;
       if(ItemsCfg[it.type].good){
-        G.score = Math.max(0, G.score + ItemsCfg[it.type].score); G.stats.caught[it.type]++; 
+        const oldScore = G.score;
+        const newScore = Math.max(0, G.score + ItemsCfg[it.type].score);
+        G.score = ANTI_CHEAT.validateScore(oldScore, newScore, it.type, 'catch');
+        G.stats.caught[it.type]++; 
         const burstColor = (it.type==='X') ? 'rgba(78,179,255,0.95)' : (it.type==='Hundo') ? 'rgba(0,230,118,0.95)' : (it.type==='Rolex') ? 'rgba(255,213,79,0.95)' : 'rgba(255,255,255,0.9)';
         spawnParticles(cx, cy, 8, burstColor); spawnBurst(cx, cy, burstColor); 
         if(it.type==='X') playSfx('squirt'); else if(it.type==='Hundo') playSfx('ching'); else if(it.type==='Rolex') playSfx('bling'); else playSfx('pop');
@@ -844,11 +991,30 @@ function submitScore() {
     return;
   }
   
+  // Anti-cheat validation before submission
+  if (ANTI_CHEAT.suspiciousActivity) {
+    alert('Suspicious activity detected. Score submission blocked.');
+    return;
+  }
+  
+  if (!ANTI_CHEAT.checkImpossibleScore(score)) {
+    alert('Impossible score detected. Score submission blocked.');
+    return;
+  }
+  
+  if (!ANTI_CHEAT.canSubmitScore()) {
+    alert('Too many submissions. Please wait before submitting again.');
+    return;
+  }
+  
+  // Generate secure hash for score validation
+  const scoreHash = ANTI_CHEAT.generateScoreHash(score, handle);
+  
   // Show loading state
   submitScoreBtn.textContent = 'Submitting...';
   submitScoreBtn.disabled = true;
   
-  // Submit to Supabase backend (automatic submission)
+  // Submit to Supabase backend with anti-cheat data
   fetch('https://thkzafepzwnrpfkjjcau.supabase.co/rest/v1/scores', {
     method: 'POST',
     headers: {
@@ -859,6 +1025,10 @@ function submitScore() {
     body: JSON.stringify({
       handle: handle,
       score: score,
+      scoreHash: scoreHash,
+      gameTime: Math.round((performance.now() - ANTI_CHEAT.gameStartTime) / 1000),
+      itemStats: G.stats,
+      suspiciousActivity: ANTI_CHEAT.suspiciousActivity,
       date: new Date().toISOString()
     })
   })
@@ -987,6 +1157,76 @@ resize(); requestAnimationFrame(loop);
 // Ensure audio is unlocked on first user gesture (iOS/Safari)
 window.addEventListener('pointerdown', ()=>{ try{ initAudio(); resumeAudio(); }catch{} }, { once:true, passive:true });
 window.addEventListener('contextmenu', e=>e.preventDefault());
+
+// Additional anti-cheat measures
+(function() {
+  // Prevent console manipulation
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error
+  };
+  
+  // Monitor for suspicious console activity
+  console.log = function(...args) {
+    const stack = new Error().stack;
+    if (stack && stack.includes('debugger')) {
+      ANTI_CHEAT.suspiciousActivity = true;
+    }
+    originalConsole.log.apply(console, args);
+  };
+  
+  // Prevent developer tools
+  setInterval(() => {
+    const devtools = {
+      open: false,
+      orientation: null
+    };
+    
+    const threshold = 160;
+    const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+    const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+    
+    if (widthThreshold || heightThreshold) {
+      devtools.open = true;
+      ANTI_CHEAT.suspiciousActivity = true;
+    }
+  }, 1000);
+  
+  // Prevent code injection
+  const originalEval = window.eval;
+  window.eval = function(code) {
+    ANTI_CHEAT.suspiciousActivity = true;
+    return originalEval.call(this, code);
+  };
+  
+  // Monitor for score manipulation attempts (removed duplicate - already defined above)
+  
+  // Prevent localStorage manipulation
+  const originalSetItem = localStorage.setItem;
+  localStorage.setItem = function(key, value) {
+    if (key === 'iceCreamHustleScores') {
+      try {
+        const scores = JSON.parse(value);
+        if (!Array.isArray(scores)) {
+          ANTI_CHEAT.suspiciousActivity = true;
+          return;
+        }
+        // Validate each score entry
+        for (const score of scores) {
+          if (!score.handle || !score.score || typeof score.score !== 'number') {
+            ANTI_CHEAT.suspiciousActivity = true;
+            return;
+          }
+        }
+      } catch (e) {
+        ANTI_CHEAT.suspiciousActivity = true;
+        return;
+      }
+    }
+    originalSetItem.call(this, key, value);
+  };
+})();
 
 // === Robust Play wiring (works even if IDs vary, guards against audio errors) ===
 (function(){
