@@ -970,8 +970,15 @@ function restart(){ startGame(); }
 
 // Leaderboard functions
 function checkHighScore(score) {
-  const highScores = JSON.parse(localStorage.getItem('iceCreamHustleScores') || '[]');
-  return highScores.length < 10 || score > Math.min(...highScores.map(s => s.score));
+  // Use a try-catch to handle potential localStorage issues with anti-cheat
+  try {
+    const highScores = JSON.parse(localStorage.getItem('iceCreamHustleScores') || '[]');
+    return highScores.length < 10 || score > Math.min(...highScores.map(s => s.score));
+  } catch (e) {
+    // If localStorage is blocked or corrupted, assume it's a high score
+    console.warn('localStorage access blocked, assuming high score');
+    return true;
+  }
 }
 
 function showLeaderboardSection() {
