@@ -1014,32 +1014,34 @@ function submitScore() {
     return;
   }
   
-  // Anti-cheat validation before submission
-  if (ANTI_CHEAT.suspiciousActivity) {
-    // Debug what triggered suspicious activity
-    ANTI_CHEAT.debugSuspiciousActivity();
-    
-    // Ask user if they want to reset and try again (for legitimate cases)
-    if (confirm('Suspicious activity detected. This might be a false positive. Would you like to reset and try submitting again?')) {
-      ANTI_CHEAT.resetSuspiciousActivity();
-      // Try submission again after a short delay
-      setTimeout(() => submitScore(), 100);
-      return;
-    }
-    
-    alert('Score submission blocked due to suspicious activity.');
-    return;
-  }
+  // Anti-cheat validation before submission (DISABLED)
+  // if (ANTI_CHEAT.suspiciousActivity) {
+  //   // Debug what triggered suspicious activity
+  //   ANTI_CHEAT.debugSuspiciousActivity();
+  //   
+  //   // Ask user if they want to reset and try again (for legitimate cases)
+  //   if (confirm('Suspicious activity detected. This might be a false positive. Would you like to reset and try submitting again?')) {
+  //     ANTI_CHEAT.resetSuspiciousActivity();
+  //     // Try submission again after a short delay
+  //     setTimeout(() => submitScore(), 100);
+  //     return;
+  //   }
+  //   
+  //   alert('Score submission blocked due to suspicious activity.');
+  //   return;
+  // }
   
-  if (!ANTI_CHEAT.checkImpossibleScore(score)) {
-    alert('Impossible score detected. Score submission blocked.');
-    return;
-  }
+  // Impossible score check (DISABLED)
+  // if (!ANTI_CHEAT.checkImpossibleScore(score)) {
+  //   alert('Impossible score detected. Score submission blocked.');
+  //   return;
+  // }
   
-  if (!ANTI_CHEAT.canSubmitScore()) {
-    alert('Too many submissions. Please wait before submitting again.');
-    return;
-  }
+  // Rate limiting (DISABLED)
+  // if (!ANTI_CHEAT.canSubmitScore()) {
+  //   alert('Too many submissions. Please wait before submitting again.');
+  //   return;
+  // }
   
   // Generate secure hash for score validation
   const scoreHash = ANTI_CHEAT.generateScoreHash(score, handle);
@@ -1165,7 +1167,7 @@ playerHandleInput.addEventListener('touchstart', (e) => {
 }, {passive:false});
 
 playerHandleInput.addEventListener('input', (e) => {
-  e.stopPropagation();
+  // Don't stop propagation for input events - allow normal typing
 });
 
 playerHandleInput.addEventListener('focus', (e) => {
@@ -1173,7 +1175,10 @@ playerHandleInput.addEventListener('focus', (e) => {
 });
 
 playerHandleInput.addEventListener('keydown', (e) => {
-  e.stopPropagation();
+  // Don't stop propagation for typing - only prevent game controls
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.stopPropagation();
+  }
 });
 
 window.addEventListener('pointerdown', onPointer, {passive:false});
