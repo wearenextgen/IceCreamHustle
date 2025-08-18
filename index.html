@@ -270,7 +270,7 @@ const ANTI_CHEAT = {
     const maxItemsPossible = Math.floor(gameTime / 0.5); // Assume max 1 item every 0.5 seconds
     const maxScorePossible = maxItemsPossible * 10; // Max points per item is 10
     
-    if (score > maxScorePossible * 1.5) { // Allow 50% buffer for edge cases
+    if (score > maxScorePossible * 2.0) { // Allow 100% buffer for edge cases (more lenient)
       console.warn('Suspicious: Score exceeds theoretical maximum');
       this.suspiciousActivity = true;
       return false;
@@ -315,6 +315,22 @@ const ANTI_CHEAT = {
     this.lastSubmissionTime = now;
     this.submissionCount++;
     return true;
+  },
+  
+  // Reset suspicious activity (for legitimate gameplay)
+  resetSuspiciousActivity() {
+    this.suspiciousActivity = false;
+    console.log('Anti-cheat: Suspicious activity reset');
+  },
+  
+  // Debug function to check what triggered suspicious activity
+  debugSuspiciousActivity() {
+    console.log('Anti-cheat debug info:');
+    console.log('- Suspicious activity flag:', this.suspiciousActivity);
+    console.log('- Score history length:', this.scoreHistory.length);
+    console.log('- Game time:', Math.round((performance.now() - this.gameStartTime) / 1000), 'seconds');
+    console.log('- Last score update:', this.lastScoreUpdate);
+    console.log('- Submission count:', this.submissionCount);
   }
 };
 
@@ -1000,7 +1016,18 @@ function submitScore() {
   
   // Anti-cheat validation before submission
   if (ANTI_CHEAT.suspiciousActivity) {
-    alert('Suspicious activity detected. Score submission blocked.');
+    // Debug what triggered suspicious activity
+    ANTI_CHEAT.debugSuspiciousActivity();
+    
+    // Ask user if they want to reset and try again (for legitimate cases)
+    if (confirm('Suspicious activity detected. This might be a false positive. Would you like to reset and try submitting again?')) {
+      ANTI_CHEAT.resetSuspiciousActivity();
+      // Try submission again after a short delay
+      setTimeout(() => submitScore(), 100);
+      return;
+    }
+    
+    alert('Score submission blocked due to suspicious activity.');
     return;
   }
   
@@ -1183,7 +1210,7 @@ window.addEventListener('contextmenu', e=>e.preventDefault());
     originalConsole.log.apply(console, args);
   };
   
-  // Prevent developer tools
+  // Prevent developer tools (more lenient detection)
   setInterval(() => {
     const devtools = {
       open: false,
@@ -1194,7 +1221,8 @@ window.addEventListener('contextmenu', e=>e.preventDefault());
     const widthThreshold = window.outerWidth - window.innerWidth > threshold;
     const heightThreshold = window.outerHeight - window.innerHeight > threshold;
     
-    if (widthThreshold || heightThreshold) {
+    // Only trigger if both width and height thresholds are exceeded (more specific)
+    if (widthThreshold && heightThreshold) {
       devtools.open = true;
       ANTI_CHEAT.suspiciousActivity = true;
     }
