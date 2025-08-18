@@ -844,20 +844,43 @@ function spawnItem(){
   const pick = weightedPick([['X',6],['Hundo',2],['Rolex',1],['Siren',1]]);
   const cfg=ItemsCfg[pick]; 
   
+  // Check if we're trying to spawn a siren and one already exists
+  if (pick === 'Siren') {
+    const existingSiren = G.items.find(item => item.type === 'Siren');
+    if (existingSiren) {
+      // Don't spawn another siren if one already exists
+      return;
+    }
+  }
+  
   // Apply responsive sizing
   const responsiveW = getResponsiveItemSize(cfg.w) * G.scale;
   const responsiveH = getResponsiveItemSize(cfg.h) * G.scale;
   
-  const x=Math.random()*(vw-responsiveW); 
-  const y=-responsiveH-4; 
+  let x;
+  if (pick === 'Siren') {
+    // For sirens, 10% chance to spawn directly above cone, 90% chance random position
+    if (Math.random() < 0.1) {
+      // Spawn directly above cone
+      x = Cone.x + (Cone.w - responsiveW) / 2;
+    } else {
+      // Spawn at random position
+      x = Math.random() * (vw - responsiveW);
+    }
+  } else {
+    // Regular items spawn at random positions
+    x = Math.random() * (vw - responsiveW);
+  }
+  
+  const y = -responsiveH - 4; 
   
   // Make items drop 25% slower on mobile
   const isMobile = window.innerWidth < 768;
   const speedMultiplier = isMobile ? 0.75 : 1.0; // 25% slower on mobile
-  const vy=((cfg.sMin*G.speedMul)+Math.random()*((cfg.sMax*G.speedMul)-(cfg.sMin*G.speedMul))) * speedMultiplier;
+  const vy = ((cfg.sMin * G.speedMul) + Math.random() * ((cfg.sMax * G.speedMul) - (cfg.sMin * G.speedMul))) * speedMultiplier;
   
-  G.items.push({type:pick,x,y,w:responsiveW,h:responsiveH,vy}); 
-  if(G.items.length>CFG.itemCap) G.items.shift();
+  G.items.push({type: pick, x, y, w: responsiveW, h: responsiveH, vy}); 
+  if(G.items.length > CFG.itemCap) G.items.shift();
 }
 
 function rectsOverlap(ax,ay,aw,ah, bx,by,bw,bh){ return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by; }
