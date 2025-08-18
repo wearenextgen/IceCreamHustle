@@ -395,28 +395,28 @@ function noiseBurst(dur=0.2, vol=1.0, type='bandpass', fStart=1200, fEnd=800, de
 // Realistic SFX recipes
 const SFX = {
   // Button tap sound - soft click
-  tap(){ tone(800,0.05,'sine',0.7,0.001,0.05); },
+  tap(){ tone(800,0.05,'sine',0.7 * getVolumeLevel(),0.001,0.05); },
   
   // Ice cream scoop sound - soft squish
-  pop(){ noiseBurst(0.15,0.8,'lowpass',800,400); },
+  pop(){ noiseBurst(0.15,0.8 * getVolumeLevel(),'lowpass',800,400); },
   
   // Dropping sound - soft thud
-  plop(){ tone(150,0.2,'sine',0.6,0.01,0.2); },
+  plop(){ tone(150,0.2,'sine',0.6 * getVolumeLevel(),0.01,0.2); },
   
   // Ice cream squirting sound - wet squirt
-  squirt(){ noiseBurst(0.2,0.9,'bandpass',1200,600); },
+  squirt(){ noiseBurst(0.2,0.9 * getVolumeLevel(),'bandpass',1200,600); },
   
   // Money sound - coin ching
-  ching(){ tone(1200,0.1,'triangle',0.8,0.002,0.1); setTimeout(()=>tone(1800,0.12,'triangle',0.6,0.002,0.12),50); },
+  ching(){ tone(1200,0.1,'triangle',0.8 * getVolumeLevel(),0.002,0.1); setTimeout(()=>tone(1800,0.12,'triangle',0.6 * getVolumeLevel(),0.002,0.12),50); },
   
   // Disappointment sound - soft sigh
-  sniff(){ noiseBurst(0.3,0.5,'bandpass',200,800); },
+  sniff(){ noiseBurst(0.3,0.5 * getVolumeLevel(),'bandpass',200,800); },
   
   // Luxury item sound - sparkle
-  bling(){ tone(2000,0.08,'sine',0.7,0.001,0.08); setTimeout(()=>tone(2500,0.1,'sine',0.5,0.001,0.1),40); setTimeout(()=>tone(3000,0.12,'sine',0.3,0.001,0.12),80); },
+  bling(){ tone(2000,0.08,'sine',0.7 * getVolumeLevel(),0.001,0.08); setTimeout(()=>tone(2500,0.1,'sine',0.5 * getVolumeLevel(),0.001,0.1),40); setTimeout(()=>tone(3000,0.12,'sine',0.3 * getVolumeLevel(),0.001,0.12),80); },
   
   // Warning sound - harsh buzz
-  buzzer(){ tone(200,0.4,'sawtooth',0.8,0.01,0.4); },
+  buzzer(){ tone(200,0.4,'sawtooth',0.8 * getVolumeLevel(),0.01,0.4); },
   
   // Police siren - alternating tones
   siren(){ const t0=AC.currentTime+0.001; const osc=AC.createOscillator(); osc.type='sine'; osc.connect(sfxGain); osc.frequency.setValueAtTime(800,t0); osc.frequency.linearRampToValueAtTime(1200,t0+0.25); osc.frequency.linearRampToValueAtTime(800,t0+0.5); osc.frequency.linearRampToValueAtTime(1200,t0+0.75); osc.frequency.linearRampToValueAtTime(800,t0+1.0); osc.start(t0); osc.stop(t0+1.2); },
