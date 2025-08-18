@@ -489,6 +489,7 @@ const viewLeaderboardBtn=document.getElementById('viewLeaderboardBtn');
 const closeLeaderboardBtn=document.getElementById('closeLeaderboardBtn');
 const startLeaderboardBtn=document.getElementById('startLeaderboardBtn');
 const playerHandleInput=document.getElementById('playerHandle');
+
 const leaderboardSection=document.getElementById('leaderboardSection');
 const leaderboardContent=document.getElementById('leaderboardContent');
 const hud=document.getElementById('hud');
@@ -1073,7 +1074,7 @@ function submitScore() {
   submitScoreBtn.textContent = 'Submitting...';
   submitScoreBtn.disabled = true;
   
-  // Submit to Supabase backend with anti-cheat data
+  // Submit to Supabase backend
   fetch('https://thkzafepzwnrpfkjjcau.supabase.co/rest/v1/scores', {
     method: 'POST',
     headers: {
@@ -1084,10 +1085,6 @@ function submitScore() {
     body: JSON.stringify({
       handle: handle,
       score: score,
-      scoreHash: scoreHash,
-      gameTime: Math.round((performance.now() - ANTI_CHEAT.gameStartTime) / 1000),
-      itemStats: G.stats,
-      suspiciousActivity: ANTI_CHEAT.suspiciousActivity,
       date: new Date().toISOString()
     })
   })
@@ -1162,6 +1159,8 @@ function hideLeaderboard() {
   leaderboardOverlay.style.display = 'none';
 }
 
+
+
 // Wire UI
 playBtn.addEventListener('click', startGame);
 playBtn.addEventListener('touchstart', startGame, {passive:false});
@@ -1177,6 +1176,8 @@ closeLeaderboardBtn.addEventListener('click', hideLeaderboard);
 closeLeaderboardBtn.addEventListener('touchstart', hideLeaderboard, {passive:false});
 startLeaderboardBtn.addEventListener('click', showLeaderboard);
 startLeaderboardBtn.addEventListener('touchstart', showLeaderboard, {passive:false});
+
+
 
 // Ensure input field is clickable and focusable
 playerHandleInput.addEventListener('click', (e) => {
