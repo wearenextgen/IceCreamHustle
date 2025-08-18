@@ -1070,6 +1070,15 @@ function submitScore() {
   // Generate secure hash for score validation
   const scoreHash = ANTI_CHEAT.generateScoreHash(score, handle);
   
+  // Prepare submission data
+  const submissionData = {
+    handle: handle,
+    score: score,
+    date: new Date().toISOString()
+  };
+  
+  console.log('Submitting data:', submissionData);
+  
   // Show loading state
   submitScoreBtn.textContent = 'Submitting...';
   submitScoreBtn.disabled = true;
@@ -1082,19 +1091,21 @@ function submitScore() {
       'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoa3phZmVwenducnBma2pqY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NDQwMDgsImV4cCI6MjA3MTAyMDAwOH0.ojtqktZVHLfH77qZN4ILdkCJ9tVIIgFi3lSbSRZcbmk',
       'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoa3phZmVwenducnBma2pqY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NDQwMDgsImV4cCI6MjA3MTAyMDAwOH0.ojtqktZVHLfH77qZN4ILdkCJ9tVIIgFi3lSbSRZcbmk'
     },
-    body: JSON.stringify({
-      handle: handle,
-      score: score,
-      date: new Date().toISOString()
-    })
+    body: JSON.stringify(submissionData)
   })
   .then(response => {
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
+    
     if (response.ok) {
       alert('Score submitted successfully! 🏆');
       hideLeaderboardSection();
       loadLeaderboard(); // Refresh leaderboard
     } else {
-      throw new Error('Submission failed');
+      return response.text().then(text => {
+        console.log('Error response text:', text);
+        throw new Error(`Submission failed: ${response.status}`);
+      });
     }
   })
   .catch(error => {
@@ -1179,19 +1190,9 @@ startLeaderboardBtn.addEventListener('touchstart', showLeaderboard, {passive:fal
 
 
 
-// Ensure input field is clickable and focusable
+// Ensure input field works properly
 playerHandleInput.addEventListener('click', (e) => {
   e.stopPropagation();
-  playerHandleInput.focus();
-});
-
-playerHandleInput.addEventListener('touchstart', (e) => {
-  e.stopPropagation();
-  playerHandleInput.focus();
-}, {passive:false});
-
-playerHandleInput.addEventListener('input', (e) => {
-  // Don't stop propagation for input events - allow normal typing
 });
 
 playerHandleInput.addEventListener('focus', (e) => {
@@ -1199,7 +1200,7 @@ playerHandleInput.addEventListener('focus', (e) => {
 });
 
 playerHandleInput.addEventListener('keydown', (e) => {
-  // Don't stop propagation for typing - only prevent game controls
+  // Only prevent game controls, allow normal typing
   if (e.key === 'Enter' || e.key === ' ') {
     e.stopPropagation();
   }
